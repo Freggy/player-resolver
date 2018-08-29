@@ -1,14 +1,13 @@
 package main
 
 import (
-		"log"
+	"log"
 	"net/http"
 	"github.com/gorilla/mux"
 	"gitlab.com/luxordynamics/player-resolver/mojang"
 )
 
 var api = mojang.NewApi()
-
 
 func main() {
 	log.SetPrefix("[PlayerResolver] ")
@@ -35,5 +34,3 @@ func HandleNameRequest(w http.ResponseWriter, r *http.Request) {
 		log.Print("PUT /name/{uuid}")
 	}
 }
-
-

@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"regexp"
-	)
+)
 
 var (
 	ValidShortUuidRegex = regexp.MustCompile("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})")
@@ -18,11 +18,6 @@ type UuidForNameRequest struct {
 	Uuid string `json:"id"`
 	Name string
 }
-
-func (req *UuidForNameRequest) toLongUuid() {
-	req.Uuid = ValidShortUuidRegex.ReplaceAllString(req.Uuid, "$1-$2-$3-$4-$5")
-}
-
 
 type Api struct {
 	client *http.Client
