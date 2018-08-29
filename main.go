@@ -1,20 +1,39 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
-	"log"
+		"log"
 	"net/http"
+	"github.com/gorilla/mux"
+	"gitlab.com/luxordynamics/player-resolver/mojang"
 )
 
+var api = mojang.NewApi()
+
+
 func main() {
-	log.SetPrefix("[PlayerResolver]")
+	log.SetPrefix("[PlayerResolver] ")
 	log.Print("Starting player resolver...")
+
 	router := mux.NewRouter()
-	router.HandleFunc("/uuid", GetUuidFromName).Methods("GET")
+	router.HandleFunc("/uuid/{name}", HandleUuidRequest).Methods("GET", "PUT")
+	router.HandleFunc("/name/{uuid}", HandleNameRequest).Methods("GET", "PUT")
 	http.ListenAndServe(":8080", router)
 }
 
-
-func GetUuidFromName(w http.ResponseWriter, r *http.Request) {
-
+func HandleUuidRequest(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		log.Print("GET /uuid/{name}")
+	} else {
+		log.Print("POST /uuid/{name}")
+	}
 }
+
+func HandleNameRequest(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		log.Print("GET /name/{uuid}")
+	} else {
+		log.Print("PUT /name/{uuid}")
+	}
+}
+
+
