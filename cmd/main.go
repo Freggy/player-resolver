@@ -18,9 +18,19 @@ func main() {
 	log.SetPrefix("[PlayerResolver] ")
 	log.Print("Starting player resolver...")
 
+	/*
+		_, b, er := fasthttp.Get(nil, "https://api.mojang.com/users/profiles/minecraft/freggyy")
+
+		if er != nil {
+			log.Println(er)
+			return
+		}
+
+		log.Println(string(b)) */
+
 	router := fasthttprouter.New()
 	router.GET("/uuid/:name", HandleUuidRequest)
-	//router.HandleFunc("/name/{uuid}", HandleNameRequest).Methods("GET", "PUT")
+	router.GET("/name/:uuid", HandleNameRequest)
 	fasthttp.ListenAndServe(":8080", router.Handler)
 }
 
@@ -57,4 +67,20 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.SetBody(resp)
+}
+
+func HandleNameRequest(ctx *fasthttp.RequestCtx) {
+	ctx.SetContentType("application/json")
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	uuid := ctx.UserValue("uuid").(string)
+
+	if mojang.ValidShortUuidRegex.MatchString(uuid) {
+		uuid = mojang.ValidLongRegex.ReplaceAllString(uuid, "$1-$2-$3-$4-$5")
+	} else if !mojang.ValidLongRegex.MatchString(uuid) {
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+		ctx.SetBodyString(`{"error": "MalformedUuidException"}`)
+		return
+	}
+
+	// TODO: check if uuid is already in database
 }

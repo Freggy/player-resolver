@@ -2,7 +2,7 @@ package mojang
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"github.com/valyala/fasthttp"
 	"net/http"
 	"regexp"
 	"time"
@@ -36,30 +36,15 @@ func NewApi() *Api {
 // This is done by GET https://api.mojang.com/users/profiles/minecraft/<name>.
 // The return value of this method contains the resolved UUID and the name of the player in the correct spelling.
 func (api *Api) UuidFromName(name string) (response *PlayerNameMapping, err error) {
-	req, err := http.NewRequest("GET", "https://api.mojang.com/users/profiles/minecraft/"+name, nil)
+	_, body, err := fasthttp.Get(nil, "https://api.mojang.com/users/profiles/minecraft/"+name)
 
 	if err != nil {
 		return nil, err
 	}
-
-	// Use other user-agent because apparently the Go user-agent is somehow blocked by Mojang for what ever reasons
-	req.Header.Set("User-Agent", " Luxor (https://www.luxor.cloud)")
-	resp, err := api.client.Do(req)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
 
 	var obj PlayerNameMapping
-	data, err := ioutil.ReadAll(resp.Body)
 
-	if err != nil {
-		return nil, err
-	}
-
-	if err = json.Unmarshal(data, &obj); err != nil {
+	if err = json.Unmarshal(body, &obj); err != nil {
 		return nil, err
 	}
 
@@ -67,3 +52,8 @@ func (api *Api) UuidFromName(name string) (response *PlayerNameMapping, err erro
 
 	return &obj, nil
 }
+
+/*
+func (api *Api) NameFromUuid(uuid string) (response *PlayerNameMapping, err error) {
+
+}*/
