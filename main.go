@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	"gitlab.com/luxordynamics/player-resolver/mojang"
+	"gitlab.com/luxordynamics/player-resolver/internal/mojang"
 	"github.com/valyala/fasthttp"
 	"github.com/buaazp/fasthttprouter"
 )
@@ -21,9 +21,11 @@ func main() {
 }
 
 func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
-	if ctx.IsPut() {
+	go func() {
+		if ctx.IsPut() {
 
-	} else {
+		} else {
 
-	}
+		}
+	}()
 }
