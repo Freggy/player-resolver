@@ -23,12 +23,14 @@ type Api struct {
 	client *http.Client
 }
 
+// Create a new instance of Api
 func NewApi() *Api {
 	return &Api{
 		&http.Client{Timeout: time.Second * 10},
 	}
 }
 
+//
 func (api *Api) UuidFromName(name string) (response *UuidForNameRequest, err error) {
 	req, err := http.NewRequest("GET", "https://api.mojang.com/users/profiles/minecraft/"+name, nil)
 
@@ -37,7 +39,7 @@ func (api *Api) UuidFromName(name string) (response *UuidForNameRequest, err err
 	}
 
 	// Use other user-agent because apparently the Go user-agent is somehow blocked by Mojang for what ever reasons
-	req.Header.Set("User-Agent", " Luxor")
+	req.Header.Set("User-Agent", " Luxor (https://www.luxor.cloud)")
 	resp, err := api.client.Do(req)
 
 	if err != nil {

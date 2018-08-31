@@ -2,9 +2,9 @@ package main
 
 import (
 	"log"
-	"net/http"
-	"github.com/gorilla/mux"
 	"gitlab.com/luxordynamics/player-resolver/mojang"
+	"github.com/valyala/fasthttp"
+	"github.com/buaazp/fasthttprouter"
 )
 
 var api = mojang.NewApi()
@@ -13,24 +13,17 @@ func main() {
 	log.SetPrefix("[PlayerResolver] ")
 	log.Print("Starting player resolver...")
 
-	router := mux.NewRouter()
-	router.HandleFunc("/uuid/{name}", HandleUuidRequest).Methods("GET", "PUT")
-	router.HandleFunc("/name/{uuid}", HandleNameRequest).Methods("GET", "PUT")
-	http.ListenAndServe(":8080", router)
+	router := fasthttprouter.New()
+	router.GET("/uuid/:name", HandleUuidRequest)
+	router.PUT("/uuid/:name", HandleUuidRequest)
+	//router.HandleFunc("/name/{uuid}", HandleNameRequest).Methods("GET", "PUT")
+	fasthttp.ListenAndServe(":8080", router.Handler)
 }
 
-func HandleUuidRequest(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		log.Print("GET /uuid/{name}")
-	} else {
-		log.Print("POST /uuid/{name}")
-	}
-}
+func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
+	if ctx.IsPut() {
 
-func HandleNameRequest(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		log.Print("GET /name/{uuid}")
 	} else {
-		log.Print("PUT /name/{uuid}")
+
 	}
 }
