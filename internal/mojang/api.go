@@ -1,11 +1,11 @@
 package mojang
 
 import (
-	"net/http"
-	"time"
-	"io/ioutil"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
 	"regexp"
+	"time"
 )
 
 var (
