@@ -6,13 +6,11 @@ import (
 	"github.com/valyala/fasthttp"
 	"gitlab.com/luxordynamics/player-resolver/internal/mojang"
 	"log"
+	"strings"
 )
 
 var api = mojang.NewApi()
 
-type NameResolveRequest struct {
-	name string
-}
 
 func main() {
 	log.SetPrefix("[PlayerResolver] ")
@@ -74,13 +72,31 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(fasthttp.StatusOK)
 	uuid := ctx.UserValue("uuid").(string)
 
-	if mojang.ValidShortUuidRegex.MatchString(uuid) {
-		uuid = mojang.ValidLongRegex.ReplaceAllString(uuid, "$1-$2-$3-$4-$5")
-	} else if !mojang.ValidLongRegex.MatchString(uuid) {
+	if mojang.ValidLongRegex.MatchString(uuid) {
+		uuid = strings.Replace(uuid, "-", "", -1)
+	} else if !mojang.ValidShortUuidRegex.MatchString(uuid) {
 		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 		ctx.SetBodyString(`{"error": "MalformedUuidException"}`)
 		return
 	}
 
+	data, err := api.NameFromUuid(uuid)
+
+	if err != nil {
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+		ctx.SetBodyString(`{"error": "MojangApiException"}`)
+		return
+	}
+
+	resp, err := json.Marshal(data)
+
+	if err != nil {
+		log.Fatal(err)
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+		ctx.SetBodyString(`{"error": "ProcessFailedException"}`)
+		return
+	}
+
+	ctx.SetBody(resp)
 	// TODO: check if uuid is already in database
 }
