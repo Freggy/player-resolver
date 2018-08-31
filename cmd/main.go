@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
-	"gitlab.com/luxordynamics/player-resolver/internal/mojang"
-	"github.com/valyala/fasthttp"
-	"github.com/buaazp/fasthttprouter"
 	"encoding/json"
+	"github.com/buaazp/fasthttprouter"
+	"github.com/valyala/fasthttp"
+	"gitlab.com/luxordynamics/player-resolver/internal/mojang"
+	"log"
 )
 
 var api = mojang.NewApi()
