@@ -14,12 +14,13 @@ var (
 	ValidUserNameRegex  = regexp.MustCompile(`[a-zA-Z0-9_]{1,16}`)
 )
 
+// This struct holds the name and the time the player changed to it.
 type UuidResolveRequest struct {
 	Name        string
 	ChangedToAt int64 `json:"changedToAt,omitempty"`
 }
 
-// This struct will hold the UUID and the name of a player.
+// This struct holds the UUID and the name of a player.
 type PlayerNameMapping struct {
 	Uuid string `json:"id"`
 	Name string
@@ -58,6 +59,10 @@ func (api *Api) UuidFromName(name string) (response *PlayerNameMapping, err erro
 	return &obj, nil
 }
 
+// Resolves the given UUID to the corresponding name.
+// This is done by GET https://api.mojang.com/user/profiles/<uuid>/names.
+// The given UUID has to be in short form i.e 92de217b8b2b403b86a5fe26fa3a9b5f.
+// The return value of this method contains the resolved UUID and the name of the player in the correct spelling.
 func (api *Api) NameFromUuid(uuid string) (response *PlayerNameMapping, err error) {
 	_, body, err := fasthttp.Get(nil, "https://api.mojang.com/user/profiles/"+uuid+"/names")
 

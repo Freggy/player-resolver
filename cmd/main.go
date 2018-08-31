@@ -32,7 +32,7 @@ func main() {
 	fasthttp.ListenAndServe(":8080", router.Handler)
 }
 
-// Handles requests for UUID resolving
+// Handles requests for resolving names to UUIDs
 func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 	ctx.SetStatusCode(fasthttp.StatusOK)
@@ -45,6 +45,8 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 		ctx.SetBodyString(`{"error": "NameNotValidException"}`)
 		return
 	}
+
+	// TODO: check if uuid is already in database
 
 	mapping, err := api.UuidFromName(name)
 
@@ -67,6 +69,7 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 	ctx.SetBody(resp)
 }
 
+// Handles requests for resolving UUIDs to names
 func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 	ctx.SetStatusCode(fasthttp.StatusOK)
