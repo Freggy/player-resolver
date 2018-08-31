@@ -14,24 +14,28 @@ var (
 	ValidUserNameRegex  = regexp.MustCompile(`[a-zA-Z0-9_]{1,16}`)
 )
 
-type UuidForNameRequest struct {
+// This struct will hold the UUID and the name of a player.
+type PlayerNameMapping struct {
 	Uuid string `json:"id"`
 	Name string
 }
 
+// This struct can be used for accessing the Mojang API for resolving names to UUIDs and vice versa.
 type Api struct {
 	client *http.Client
 }
 
-// Create a new instance of Api
+// Create a new instance of Api.
 func NewApi() *Api {
 	return &Api{
 		&http.Client{Timeout: time.Second * 10},
 	}
 }
 
-//
-func (api *Api) UuidFromName(name string) (response *UuidForNameRequest, err error) {
+// Resolves the given player name to a UUID.
+// This is done by GET https://api.mojang.com/users/profiles/minecraft/<name>.
+// The return value of this method contains the resolved UUID and the name of the player in the correct spelling.
+func (api *Api) UuidFromName(name string) (response *PlayerNameMapping, err error) {
 	req, err := http.NewRequest("GET", "https://api.mojang.com/users/profiles/minecraft/"+name, nil)
 
 	if err != nil {
@@ -48,7 +52,7 @@ func (api *Api) UuidFromName(name string) (response *UuidForNameRequest, err err
 
 	defer resp.Body.Close()
 
-	var obj UuidForNameRequest
+	var obj PlayerNameMapping
 	data, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
