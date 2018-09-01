@@ -11,7 +11,6 @@ import (
 
 var api = mojang.NewApi()
 
-
 func main() {
 	log.SetPrefix("[PlayerResolver] ")
 	log.Print("Starting player resolver...")

@@ -6,6 +6,6 @@ BINARY=player-resolver-$(GIT_REVISION)
 
 all: test build
 build:
-	cd $(PWD)/cmd; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY) -v
+	cd $(PWD)/cmd; gofmt -w -s .; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY) -v
 test:
 	$(GOTEST) ./... -v
