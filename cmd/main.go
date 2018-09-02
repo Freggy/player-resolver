@@ -103,7 +103,7 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	var data *mojang.PlayerNameMapping
 
 	if exists {
-
+		data, err = retrieveByUuid(uuid)
 	} else {
 		data, err = api.NameFromUuid(uuid)
 	}
@@ -125,7 +125,22 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	// TODO: check if uuid is already in database
 }
 
+
+func retrieveByUuid(uuid string) (mapping *mojang.PlayerNameMapping, err error) {
+	entry, err := session.EntryByUuid(uuid)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: check if last update was x days ago
+
+	return &entry.Mapping, nil
+}
+
 func handleError(ctx *fasthttp.RequestCtx, body string) {
 	ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 	ctx.SetBodyString(body)
 }
+
+

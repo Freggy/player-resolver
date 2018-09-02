@@ -11,8 +11,8 @@ type CassandraSession struct {
 }
 
 type Entry struct {
-	mapping    mojang.PlayerNameMapping
-	lastUpdate int64
+	Mapping    mojang.PlayerNameMapping
+	LastUpdate int64
 }
 
 var (
