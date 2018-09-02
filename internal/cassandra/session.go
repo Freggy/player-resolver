@@ -79,11 +79,11 @@ func (session *CassandraSession) entryFromDatabase(key string, query string) (en
 	}
 
 	return &Entry{
-		mapping: mojang.PlayerNameMapping{
+		Mapping: mojang.PlayerNameMapping{
 			Uuid: uuid,
 			Name: name,
 		},
-		lastUpdate: lastUpdate,
+		LastUpdate: lastUpdate,
 	}, nil
 }
 

@@ -1,4 +1,4 @@
-package main
+package player_resolver
 
 import (
 	"encoding/json"
