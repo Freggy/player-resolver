@@ -4,17 +4,29 @@ import (
 	"encoding/json"
 	"github.com/buaazp/fasthttprouter"
 	"github.com/valyala/fasthttp"
+	"gitlab.com/luxordynamics/player-resolver/internal/cassandra"
 	"gitlab.com/luxordynamics/player-resolver/internal/mojang"
 	"log"
 	"strings"
 )
 
 var api = mojang.NewApi()
+var session cassandra.CassandraSession
 
 func main() {
 	log.SetPrefix("[PlayerResolver] ")
 	log.Print("Starting player resolver...")
 
+	session, err := cassandra.New()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer session.Close()
+
+	// 20109332-3b1b-4dcb-9fd1-1b3468f05572
+	// 92de217b-8b2b-403b-86a5-fe26fa3a9b5f
 	/*
 		_, b, er := fasthttp.Get(nil, "https://api.mojang.com/users/profiles/minecraft/freggyy")
 
@@ -77,16 +89,27 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	if mojang.ValidLongRegex.MatchString(uuid) {
 		uuid = strings.Replace(uuid, "-", "", -1)
 	} else if !mojang.ValidShortUuidRegex.MatchString(uuid) {
-		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-		ctx.SetBodyString(`{"error": "MalformedUuidException"}`)
+		handleError(ctx, `{"error": "MalformedUuidException"}`)
 		return
 	}
 
-	data, err := api.NameFromUuid(uuid)
+	exists, err := session.UuidEntryExists(uuid)
 
 	if err != nil {
-		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-		ctx.SetBodyString(`{"error": "MojangApiException"}`)
+		handleError(ctx, `{"error": "InternalServiceException"}`)
+		return
+	}
+
+	var data *mojang.PlayerNameMapping
+
+	if exists {
+
+	} else {
+		data, err = api.NameFromUuid(uuid)
+	}
+
+	if err != nil {
+		handleError(ctx, `{"error": "InternalServiceException"}`)
 		return
 	}
 
@@ -94,11 +117,15 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 
 	if err != nil {
 		log.Fatal(err)
-		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-		ctx.SetBodyString(`{"error": "ProcessFailedException"}`)
+		handleError(ctx, `{"error": "InternalServiceException"}`)
 		return
 	}
 
 	ctx.SetBody(resp)
 	// TODO: check if uuid is already in database
+}
+
+func handleError(ctx *fasthttp.RequestCtx, body string) {
+	ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+	ctx.SetBodyString(body)
 }

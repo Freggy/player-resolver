@@ -2,6 +2,8 @@ version: "3"
 services:
   cassandra:
     image: cassandra:latest
+    volumes:
+      - /home/yannic/cassandra_data/:/var/lib/cassandra
     ports:
       - "7000:7000"
       - "7001:7001"
