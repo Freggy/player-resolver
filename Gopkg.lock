@@ -11,7 +11,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a29ba7c8d0498ebaad58c97e36d4568c449dd6c9eea91210cd9ef95c3c14265f"
+  digest = "1:4983e4c61e3eba9414809b35c44efa9e46ca329a745a307ae36ef60898b242ca"
   name = "github.com/gocql/gocql"
   packages = [
     ".",
@@ -20,7 +20,7 @@
     "internal/streams",
   ]
   pruneopts = "UT"
-  revision = "db20ccb04312b6ec04b837f17558d22b99db8565"
+  revision = "843d9a6e022dbaafac6ddedfcb88c3a9e48b960b"
 
 [[projects]]
   branch = "master"
@@ -59,12 +59,12 @@
   version = "v1.1"
 
 [[projects]]
-  branch = "master"
   digest = "1:c468422f334a6b46a19448ad59aaffdfc0a36b08fdcc1c749a0b29b6453d7e59"
   name = "github.com/valyala/bytebufferpool"
   packages = ["."]
   pruneopts = "UT"
   revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:15ad8a80098fcc7a194b9db6b26d74072a852e4faa957848c8118193d3c69230"

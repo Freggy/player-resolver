@@ -11,7 +11,7 @@ import (
 )
 
 var api = mojang.NewApi()
-var session cassandra.CassandraSession
+var session cassandra.Session
 
 func main() {
 	log.SetPrefix("[PlayerResolver] ")
