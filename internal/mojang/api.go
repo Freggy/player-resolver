@@ -11,7 +11,7 @@ import (
 var (
 	ValidShortUuidRegex = regexp.MustCompile("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})")
 	ValidLongRegex      = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
-	ValidUserNameRegex  = regexp.MustCompile(`[a-zA-Z0-9_]{1,16}`)
+	ValidUserNameRegex  = regexp.MustCompile(`[a-zA-Z0-9_]{3,16}`)
 )
 
 // This struct holds the name and the time the player changed to it.
