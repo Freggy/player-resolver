@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+// TODO: change error responses
+
 var api = mojang.NewApi()
 var session cassandra.Session
 
