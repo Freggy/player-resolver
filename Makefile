@@ -1,7 +1,8 @@
 GOBUILD=go build
 GOTEST=go test
 GIT_REVISION=$(shell git rev-parse --short=8 HEAD)
-PLATFORMS=darwin linux windows
+PLATFORM=linux
+ARCH=amd64
 BINARY=player-resolver-$(GIT_REVISION)
 LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.Build=${GIT_REVISION}"
 
@@ -15,8 +16,7 @@ dep:
 	dep ensure -vendor-only
 
 build:
-	$(foreach GOOS, $(PLATFORMS),\
-	$(foreach GOARCH, $(ARCHITECTURES), $(shell export GOOS=$(GOOS); export GOARCH=$(GOARCH); gofmt -w -s .; CGO_ENABLED=0 $(GOBUILD) -o $(BINARY) -v
+	$(shell export GOOS=$(PLATFORM); export GOARCH=$(ARCH); gofmt -w -s .; CGO_ENABLED=0 $(GOBUILD) -o $(BINARY) -v)
 
 test:
 	$(GOTEST) ./... -v

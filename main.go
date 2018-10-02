@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"github.com/buaazp/fasthttprouter"
-	"github.com/valyala/fasthttp"
 	"github.com/luxordynamics/player-resolver/internal/cassandra"
 	"github.com/luxordynamics/player-resolver/internal/mojang"
+	"github.com/valyala/fasthttp"
 	"log"
 	"strings"
 )
@@ -14,8 +14,6 @@ var api = mojang.NewApi()
 var session cassandra.Session
 
 func main() {
-	log.SetPrefix("[PlayerResolver] ")
-	log.Print("Starting player resolver...")
 
 	session, err := cassandra.New()
 
@@ -24,18 +22,6 @@ func main() {
 	}
 
 	defer session.Close()
-
-	// 20109332-3b1b-4dcb-9fd1-1b3468f05572
-	// 92de217b-8b2b-403b-86a5-fe26fa3a9b5f
-	/*
-		_, b, er := fasthttp.Get(nil, "https://api.mojang.com/users/profiles/minecraft/freggyy")
-
-		if er != nil {
-			log.Println(er)
-			return
-		}
-
-		log.Println(string(b)) */
 
 	router := fasthttprouter.New()
 	router.GET("/uuid/:name", HandleUuidRequest)
@@ -125,7 +111,6 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	// TODO: check if uuid is already in database
 }
 
-
 func retrieveByUuid(uuid string) (mapping *mojang.PlayerNameMapping, err error) {
 	entry, err := session.EntryByUuid(uuid)
 
@@ -142,5 +127,3 @@ func handleError(ctx *fasthttp.RequestCtx, body string) {
 	ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 	ctx.SetBodyString(body)
 }
-
-
