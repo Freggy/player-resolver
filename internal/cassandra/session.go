@@ -2,7 +2,7 @@ package cassandra
 
 import (
 	"github.com/gocql/gocql"
-	"gitlab.com/luxordynamics/player-resolver/internal/mojang"
+	"github.com/luxordynamics/player-resolver/internal/mojang"
 )
 
 type Session struct {

@@ -1,11 +1,11 @@
-package player_resolver
+package main
 
 import (
 	"encoding/json"
 	"github.com/buaazp/fasthttprouter"
 	"github.com/valyala/fasthttp"
-	"gitlab.com/luxordynamics/player-resolver/internal/cassandra"
-	"gitlab.com/luxordynamics/player-resolver/internal/mojang"
+	"github.com/luxordynamics/player-resolver/internal/cassandra"
+	"github.com/luxordynamics/player-resolver/internal/mojang"
 	"log"
 	"strings"
 )
