@@ -31,7 +31,7 @@ func main() {
 	fasthttp.ListenAndServe(":8080", router.Handler)
 }
 
-// Handles requests for resolving names to UUIDs
+// HandleUuidRequest handles requests for resolving names to UUIDs
 func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 	ctx.SetStatusCode(fasthttp.StatusOK)
@@ -68,7 +68,7 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 	ctx.SetBody(resp)
 }
 
-// Handles requests for resolving UUIDs to names
+// HandleNameRequest handles requests for resolving UUIDs to names
 func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 	ctx.SetStatusCode(fasthttp.StatusOK)

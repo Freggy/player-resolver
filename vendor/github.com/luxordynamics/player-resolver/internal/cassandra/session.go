@@ -23,7 +23,7 @@ var (
 	insertQuery            = "INSERT INTO uuid_cache (uuid, name, last_update) VALUES (?, ?, ?)"
 )
 
-// New creates a new instance of Session and directly connects to the cluster.
+// Creates a new instance of Session and directly connects to the cluster.
 func New() (*Session, error) {
 	cluster := gocql.NewCluster("localhost")
 	cluster.Keyspace = "luxor_cloud"
@@ -41,30 +41,28 @@ func New() (*Session, error) {
 	}, nil
 }
 
-// EntryByUuid returns an Entry by its UUID from the database.
+// Gets an Entry by its UUID from the database.
 func (session *Session) EntryByUuid(uuid string) (*Entry, error) {
 	return session.entryFromDatabase(uuid, selectByUuidEntryQuery)
 }
 
-// EntryByName returns an Entry by its name from the database.
+// Gets an Entry by its name from the database.
 func (session *Session) EntryByName(name string) (*Entry, error) {
 	return session.entryFromDatabase(name, selectByNameEntryQuery)
 }
 
-// UuidEntryExists returns whether or not an entry with the given uuid exists
+// Checks whether or not an entry with the given uuid exists
 func (session *Session) UuidEntryExists(uuid string) (ret bool, err error) {
 	return session.entryExists(uuid, uuidExistsQuery)
 }
 
-// NameEntryExists returns whether or not an entry with the given name exists.
+// Checks whether or not an entry with the given name exists.
 func (session *Session) NameEntryExists(name string) (ret bool, err error) {
 	return session.entryExists(name, nameExistsQuery)
 }
 
-// WriteEntry inserts a name with the associated uuid and the last update time.
 func (session *Session) WriteEntry(uuid string, name string, lastUpdated int64) error {
-	err := session.session.Query("INSERT INTO uuid_cache (uuid, name, last_update) VALUES (?, ?, ?)", uuid, name, lastUpdated).Exec();
-	if err != nil {
+	if err := session.session.Query("INSERT INTO uuid_cache (uuid, name, last_update) VALUES (?, ?, ?)", uuid, name, lastUpdated).Exec(); err != nil {
 		return err
 	}
 	return nil
