@@ -3,6 +3,7 @@ GOTEST=go test
 GIT_REVISION=$(shell git rev-parse --short=8 HEAD)
 PLATFORM=linux
 ARCH=amd64
+VERSION=0.2.3
 BINARY=player-resolver-$(GIT_REVISION)
 LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.Build=${GIT_REVISION}"
 
