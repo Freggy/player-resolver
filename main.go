@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"github.com/buaazp/fasthttprouter"
-	"github.com/luxordynamics/player-resolver/internal/cassandra"
-	"github.com/luxordynamics/player-resolver/internal/mojang"
 	"github.com/valyala/fasthttp"
 	"log"
 	"strings"
+	"gitlab.com/luxordynamics/player-resolver/internal/cassandra"
+	"gitlab.com/luxordynamics/player-resolver/internal/mojang"
 )
 
 // TODO: change error responses
@@ -40,8 +40,7 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 
 	if !mojang.ValidUserNameRegex.MatchString(name) {
 		log.Println("Given name is not valid. (" + name + ")")
-		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-		ctx.SetBodyString(`{"error": "NameNotValidException"}`)
+		handleError(ctx, fasthttp.StatusBadRequest, `{"code": 400, "message": "Provided name is not valid", "type": "InvalidNameException"}`)
 		return
 	}
 
@@ -51,8 +50,7 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 
 	if err != nil {
 		log.Fatal(err)
-		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-		ctx.SetBodyString(`{"error": "MojangRequestException"}`)
+		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while querying Mojang API", "type": "MojangApiException"}`)
 		return
 	}
 
@@ -60,8 +58,7 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 
 	if err != nil {
 		log.Fatal(err)
-		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-		ctx.SetBodyString(`{"error": "ProcessFailedException"}`)
+		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
 		return
 	}
 
@@ -77,14 +74,14 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	if mojang.ValidLongRegex.MatchString(uuid) {
 		uuid = strings.Replace(uuid, "-", "", -1)
 	} else if !mojang.ValidShortUuidRegex.MatchString(uuid) {
-		handleError(ctx, `{"error": "MalformedUuidException"}`)
+		handleError(ctx, fasthttp.StatusBadRequest, `{"code": 400, "message": "Provided UUID is not vaild", "type": "InvalidUuidException"}`)
 		return
 	}
 
 	exists, err := session.UuidEntryExists(uuid)
 
 	if err != nil {
-		handleError(ctx, `{"error": "InternalServiceException"}`)
+		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while querying Mojang API", "type": "MojangApiException"}`)
 		return
 	}
 
@@ -97,7 +94,7 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	if err != nil {
-		handleError(ctx, `{"error": "InternalServiceException"}`)
+		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
 		return
 	}
 
@@ -105,7 +102,7 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 
 	if err != nil {
 		log.Fatal(err)
-		handleError(ctx, `{"error": "InternalServiceException"}`)
+		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
 		return
 	}
 
@@ -122,10 +119,10 @@ func retrieveByUuid(uuid string) (mapping *mojang.PlayerNameMapping, err error) 
 
 	// TODO: check if last update was x days ago
 
-	return &entry.Mapping, nil
+	return entry.Mapping, nil
 }
 
-func handleError(ctx *fasthttp.RequestCtx, body string) {
-	ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+func handleError(ctx *fasthttp.RequestCtx, code int, body string) {
+	ctx.SetStatusCode(code)
 	ctx.SetBodyString(body)
 }

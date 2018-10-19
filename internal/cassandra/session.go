@@ -2,7 +2,7 @@ package cassandra
 
 import (
 	"github.com/gocql/gocql"
-	"github.com/luxordynamics/player-resolver/internal/mojang"
+	"gitlab.com/luxordynamics/player-resolver/internal/mojang"
 )
 
 type Session struct {
@@ -11,7 +11,7 @@ type Session struct {
 }
 
 type Entry struct {
-	Mapping    mojang.PlayerNameMapping
+	Mapping    *mojang.PlayerNameMapping
 	LastUpdate int64
 }
 
