@@ -21,12 +21,17 @@ var config app.Config
 func main() {
 
 	session, err := cassandra.New()
+	defer session.Close()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer session.Close()
+	if err = session.Setup(); err != nil {
+		log.Fatal(err)
+	}
+
+	// TODO: load config
 
 	router := fasthttprouter.New()
 	router.GET("/uuid/:name", HandleUuidRequest)
