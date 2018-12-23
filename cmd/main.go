@@ -2,18 +2,23 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/buaazp/fasthttprouter"
+	"github.com/luxordynamics/player-resolver/cmd/app"
+	"github.com/luxordynamics/player-resolver/util/cassandra"
+	"github.com/luxordynamics/player-resolver/util/mojang"
 	"github.com/valyala/fasthttp"
 	"log"
+	"strconv"
 	"strings"
-	"gitlab.com/luxordynamics/player-resolver/internal/cassandra"
-	"gitlab.com/luxordynamics/player-resolver/internal/mojang"
+	"time"
 )
 
 // TODO: change error responses
 
 var api = mojang.NewApi()
 var session cassandra.Session
+var config app.Config
 
 func main() {
 
@@ -44,12 +49,21 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// TODO: check if uuid is already in database
+	exists, err := session.NameEntryExists(name)
+
+	if err != nil {
+		handleError(ctx, fasthttp.StatusBadRequest, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+		return
+	}
+
+	if exists {
+		
+	}
 
 	mapping, err := api.UuidFromName(name)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while querying Mojang API", "type": "MojangApiException"}`)
 		return
 	}
@@ -57,7 +71,7 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 	resp, err := json.Marshal(mapping)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
 		return
 	}
@@ -88,7 +102,7 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	var data *mojang.PlayerNameMapping
 
 	if exists {
-		data, err = retrieveByUuid(uuid)
+		data, err = dwad(uuid)
 	} else {
 		data, err = api.NameFromUuid(uuid)
 	}
@@ -107,19 +121,51 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.SetBody(resp)
-	// TODO: check if uuid is already in database
 }
 
-func retrieveByUuid(uuid string) (mapping *mojang.PlayerNameMapping, err error) {
+// retrieveByUuid TODO: add doc
+func tryNameRemapping(uuid string) (mapping *mojang.PlayerNameMapping, err error) {
 	entry, err := session.EntryByUuid(uuid)
 
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: check if last update was x days ago
+	canChangeDate := time.Unix(entry.Mapping.ChangedToAt / 1000, 0).AddDate(0, 1, 0)
+
+	// If the current date is past the date on which
+	// the player is able to change their name again
+	// query Mojang API
+	if canChangeDate.After(time.Now()) {
+
+		// If the last time we queried the Mojang api exceeds the specified interval,
+		// we retrieve the newest name in order to have the most up to date values
+		if time.Unix(entry.LastQuery / 1000, 0).After(time.Now().Add(config.MojangAPIQueryInterval)) {
+			mapping, err := api.NameFromUuid(entry.Mapping.Uuid)
+
+			if err != nil {
+				return nil, err
+			}
+
+			session.UpdateLastQuery(time.Now().UnixNano() / 1000000)
+
+			// Name has changed write changes to database
+			if mapping.Name != entry.Mapping.Name {
+				session.UpdateName(mapping.Name)
+			}
+		}
+	}
 
 	return entry.Mapping, nil
+}
+
+func millisToTime(millis int64) {
+	i, err := strconv.ParseInt("1405544146", 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	tm := time.Unix(i, 0)
+	fmt.Println(tm)
 }
 
 func handleError(ctx *fasthttp.RequestCtx, code int, body string) {

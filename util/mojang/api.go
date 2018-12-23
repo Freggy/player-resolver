@@ -15,15 +15,16 @@ var (
 )
 
 // This struct holds the name and the time the player changed to it.
-type UuidResolveRequest struct {
+type NameHistoryEntry struct {
 	Name        string
 	ChangedToAt int64 `json:"changedToAt,omitempty"`
 }
 
 // This struct holds the UUID and the name of a player.
 type PlayerNameMapping struct {
-	Uuid string `json:"id"`
-	Name string
+	Uuid        string `json:"id"`
+	Name        string
+	ChangedToAt int64 `json:"changedToAt,omitempty"`
 }
 
 // This struct can be used for accessing the Mojang API for resolving names to UUIDs and vice versa.
@@ -59,21 +60,31 @@ func (api *Api) UuidFromName(name string) (response *PlayerNameMapping, err erro
 	return &obj, nil
 }
 
-// Resolves the given UUID to the corresponding name.
+// NameFromUuid resolves the given UUID to the corresponding name.
 // This is done by GET https://api.mojang.com/user/profiles/<uuid>/names.
 // The given UUID has to be in short form i.e 92de217b8b2b403b86a5fe26fa3a9b5f.
 // The return value of this method contains the resolved UUID and the name of the player in the correct spelling.
 func (api *Api) NameFromUuid(uuid string) (response *PlayerNameMapping, err error) {
-	_, body, err := fasthttp.Get(nil, "https://api.mojang.com/user/profiles/"+uuid+"/names")
+	data, err := GetNameHistory(uuid)
 
-	data := make([]UuidResolveRequest, 0)
-
-	if err = json.Unmarshal(body, &data); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
 	return &PlayerNameMapping{
 		ValidShortUuidRegex.ReplaceAllString(uuid, "$1-$2-$3-$4-$5"),
 		data[1].Name,
+		data[1].ChangedToAt,
 	}, nil
+}
+
+func GetNameHistory(uuid string) ([]NameHistoryEntry, error) {
+	_, body, err := fasthttp.Get(nil, "https://api.mojang.com/user/profiles/"+uuid+"/names")
+
+	data := make([]NameHistoryEntry, 0)
+
+	if err = json.Unmarshal(body, &data); err != nil {
+		return nil, err
+	}
+	return data, nil
 }
