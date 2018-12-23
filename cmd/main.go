@@ -48,14 +48,14 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 
 	if !mojang.ValidUserNameRegex.MatchString(name) {
 		log.Println("Given name is not valid. (" + name + ")")
-		handleError(nil, ctx, fasthttp.StatusBadRequest, `{"code": 400, "message": "Provided name is not valid", "type": "InvalidNameException"}`)
+		handleError(nil, ctx, app.NewServerBadRequestError("Provided name is not valid", "InvalidNameException"))
 		return
 	}
 
 	exists, err := session.NameEntryExists(name)
 
 	if err != nil {
-		handleError(err, ctx, fasthttp.StatusBadRequest, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+		handleError(err, ctx, app.NewInternalServerError("Error while processing request", "ServerException"))
 		return
 	}
 
@@ -64,7 +64,7 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 	if exists {
 		entry, err := session.EntryByName(name)
 		if err != nil {
-			handleError(err, ctx, fasthttp.StatusBadRequest, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+			handleError(err, ctx, app.NewInternalServerError("Error while processing request", "ServerException"))
 			return
 		}
 		data, err = tryNameRemapping(entry.Mapping.Name)
@@ -73,14 +73,14 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	if err != nil {
-		handleError(err, ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while querying Mojang API", "type": "MojangApiException"}`)
+		handleError(err, ctx, app.NewInternalServerError("Error while querying Mojang API", "MojangAPIExcpetion"))
 		return
 	}
 
 	resp, err := json.Marshal(data)
 
 	if err != nil {
-		handleError(err, ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+		handleError(err, ctx, app.NewInternalServerError("Error while processing request", "ServerException"))
 		return
 	}
 
@@ -96,14 +96,14 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	if mojang.ValidLongRegex.MatchString(uuid) {
 		uuid = strings.Replace(uuid, "-", "", -1)
 	} else if !mojang.ValidShortUuidRegex.MatchString(uuid) {
-		handleError(nil, ctx, fasthttp.StatusBadRequest, `{"code": 400, "message": "Provided UUID is not vaild", "type": "InvalidUuidException"}`)
+		handleError(nil, ctx, app.NewServerBadRequestError("Provided UUID is not vaild", "InvalidUUIDException"))
 		return
 	}
 
 	exists, err := session.UuidEntryExists(uuid)
 
 	if err != nil {
-		handleError(err, ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while querying Mojang API", "type": "MojangApiException"}`)
+		handleError(err, ctx, app.NewInternalServerError("Error while querying Mojang API", "MojangAPIExcpetion"))
 		return
 	}
 
@@ -116,7 +116,7 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	if err != nil {
-		handleError(err, ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+		handleError(err, ctx, app.NewInternalServerError("Error while processing request", "ServerException"))
 		return
 	}
 
@@ -124,7 +124,7 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 
 	if err != nil {
 		log.Fatal(err)
-		handleError(err, ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+		handleError(err, ctx, app.NewInternalServerError("Error while processing request", "ServerException"))
 		return
 	}
 
@@ -171,8 +171,9 @@ func tryNameRemapping(uuid string) (mapping *mojang.PlayerNameMapping, err error
 	return entry.Mapping, nil
 }
 
-func handleError(err error, ctx *fasthttp.RequestCtx, code int, body string) {
+func handleError(err error, ctx *fasthttp.RequestCtx, serviceError *app.ServiceError) {
 	log.Print(err)
-	ctx.SetStatusCode(code)
-	ctx.SetBodyString(body)
+	ctx.SetStatusCode(serviceError.Status)
+	data, _ := serviceError.ToJSON()
+	ctx.SetBodyString(data)
 }
