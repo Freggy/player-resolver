@@ -17,8 +17,10 @@ type Entry struct {
 }
 
 var (
-	createTableQuery       = "CREATE TABLE luxor.uuid_cache (id UUID PRIMARY KEY, name text, last_change timestamp, last_query timestamp)"
-	updateNameQuery        = "INSERT INTO uuid_cache (name, last_change, last_query) VALUES (?, ?, ?, ?)"
+	createKeySpace         = "CREATE KEYSPACE luxor WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor' : 1};"
+	createTableQuery       = "CREATE TABLE uuid_cache (uuid UUID PRIMARY KEY, name text, last_change timestamp, last_query timestamp)"
+	updateNameQuery        = "UPDATE uuid_cache SET name = ? WHERE uuid = ?"
+	updateLastQuery        = "UPDATE uuid_cache SET last_query = ? WHERE uuid = ?"
 	uuidExistsQuery        = "SELECT count(*) FROM uuid_cache WHERE uuid = ?"
 	nameExistsQuery        = "SELECT count(*) FROM uuid_cache WHERE name = ?"
 	selectByUuidEntryQuery = "SELECT * FROM uuid_cache WHERE uuid = ?"
@@ -28,7 +30,7 @@ var (
 
 // New creates a new instance of Session and directly connects to the cluster.
 func New() (*Session, error) {
-	cluster := gocql.NewCluster("localhost")
+	cluster := gocql.NewCluster("0.0.0.0")
 	cluster.Keyspace = "luxor"
 	cluster.Consistency = gocql.Quorum
 
@@ -44,8 +46,17 @@ func New() (*Session, error) {
 	}, nil
 }
 
-func (session *Session) CreateTable() {
+// Setup creates the keyspace and the table.
+func (session *Session) Setup() error {
+	if err := session.session.Query(createKeySpace).Exec(); err != nil {
+		return err
+	}
 
+	if err := session.session.Query(createTableQuery).Exec(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // EntryByUuid returns an Entry by its UUID from the database.
@@ -70,19 +81,26 @@ func (session *Session) NameEntryExists(name string) (bool, error) {
 
 // WriteEntry inserts a name with the associated uuid and the last update time.
 func (session *Session) WriteEntry(uuid string, name string, lastUpdated int64, lastQuery int64) error {
-	err := session.session.Query(insertQuery, uuid, name, lastUpdated, lastQuery).Exec()
-	if err != nil {
+	if err := session.session.Query(insertQuery, uuid, name, lastUpdated, lastQuery).Exec(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (session *Session) UpdateName(name string) {
-	// TODO: update last_update
+// UpdateName updates the name column.
+func (session *Session) UpdateName(name string, uuid string) error {
+	if err := session.session.Query(updateNameQuery, name, uuid).Exec(); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (session *Session) UpdateLastQuery(lastQuery int64) {
-
+// UpdateLastQuery updates the last_query column.
+func (session *Session) UpdateLastQuery(lastQuery int64, uuid string) error {
+	if err := session.session.Query(updateLastQuery, lastQuery, uuid).Exec(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Retrieves an Entry from the database by using the given key and query string. This is a synchronous function call.

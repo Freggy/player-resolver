@@ -2,14 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/buaazp/fasthttprouter"
 	"github.com/luxordynamics/player-resolver/cmd/app"
 	"github.com/luxordynamics/player-resolver/util/cassandra"
 	"github.com/luxordynamics/player-resolver/util/mojang"
 	"github.com/valyala/fasthttp"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -45,34 +43,39 @@ func HandleUuidRequest(ctx *fasthttp.RequestCtx) {
 
 	if !mojang.ValidUserNameRegex.MatchString(name) {
 		log.Println("Given name is not valid. (" + name + ")")
-		handleError(ctx, fasthttp.StatusBadRequest, `{"code": 400, "message": "Provided name is not valid", "type": "InvalidNameException"}`)
+		handleError(nil, ctx, fasthttp.StatusBadRequest, `{"code": 400, "message": "Provided name is not valid", "type": "InvalidNameException"}`)
 		return
 	}
 
 	exists, err := session.NameEntryExists(name)
 
 	if err != nil {
-		handleError(ctx, fasthttp.StatusBadRequest, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+		handleError(err, ctx, fasthttp.StatusBadRequest, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
 		return
 	}
+
+	var data *mojang.PlayerNameMapping
 
 	if exists {
-		
+		entry, err := session.EntryByName(name)
+		if err != nil {
+			handleError(err, ctx, fasthttp.StatusBadRequest, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+			return
+		}
+		data, err = tryNameRemapping(entry.Mapping.Name)
+	} else {
+		data, err = api.UuidFromName(name)
 	}
 
-	mapping, err := api.UuidFromName(name)
-
 	if err != nil {
-		log.Print(err)
-		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while querying Mojang API", "type": "MojangApiException"}`)
+		handleError(err, ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while querying Mojang API", "type": "MojangApiException"}`)
 		return
 	}
 
-	resp, err := json.Marshal(mapping)
+	resp, err := json.Marshal(data)
 
 	if err != nil {
-		log.Print(err)
-		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+		handleError(err, ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
 		return
 	}
 
@@ -88,27 +91,27 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 	if mojang.ValidLongRegex.MatchString(uuid) {
 		uuid = strings.Replace(uuid, "-", "", -1)
 	} else if !mojang.ValidShortUuidRegex.MatchString(uuid) {
-		handleError(ctx, fasthttp.StatusBadRequest, `{"code": 400, "message": "Provided UUID is not vaild", "type": "InvalidUuidException"}`)
+		handleError(nil, ctx, fasthttp.StatusBadRequest, `{"code": 400, "message": "Provided UUID is not vaild", "type": "InvalidUuidException"}`)
 		return
 	}
 
 	exists, err := session.UuidEntryExists(uuid)
 
 	if err != nil {
-		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while querying Mojang API", "type": "MojangApiException"}`)
+		handleError(err, ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while querying Mojang API", "type": "MojangApiException"}`)
 		return
 	}
 
 	var data *mojang.PlayerNameMapping
 
 	if exists {
-		data, err = dwad(uuid)
+		data, err = tryNameRemapping(uuid)
 	} else {
 		data, err = api.NameFromUuid(uuid)
 	}
 
 	if err != nil {
-		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+		handleError(err, ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
 		return
 	}
 
@@ -116,14 +119,14 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 
 	if err != nil {
 		log.Fatal(err)
-		handleError(ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
+		handleError(err, ctx, fasthttp.StatusInternalServerError, `{"code": 500, "message": "Error while processing request", "type": "ServerException"}`)
 		return
 	}
 
 	ctx.SetBody(resp)
 }
 
-// retrieveByUuid TODO: add doc
+// tryNameRemapping TODO: add doc
 func tryNameRemapping(uuid string) (mapping *mojang.PlayerNameMapping, err error) {
 	entry, err := session.EntryByUuid(uuid)
 
@@ -131,7 +134,7 @@ func tryNameRemapping(uuid string) (mapping *mojang.PlayerNameMapping, err error
 		return nil, err
 	}
 
-	canChangeDate := time.Unix(entry.Mapping.ChangedToAt / 1000, 0).AddDate(0, 1, 0)
+	canChangeDate := time.Unix(entry.Mapping.ChangedToAt/1000, 0).AddDate(0, 1, 0)
 
 	// If the current date is past the date on which
 	// the player is able to change their name again
@@ -140,18 +143,22 @@ func tryNameRemapping(uuid string) (mapping *mojang.PlayerNameMapping, err error
 
 		// If the last time we queried the Mojang api exceeds the specified interval,
 		// we retrieve the newest name in order to have the most up to date values
-		if time.Unix(entry.LastQuery / 1000, 0).After(time.Now().Add(config.MojangAPIQueryInterval)) {
+		if time.Unix(entry.LastQuery/1000, 0).After(time.Now().Add(config.MojangAPIQueryInterval)) {
 			mapping, err := api.NameFromUuid(entry.Mapping.Uuid)
 
 			if err != nil {
 				return nil, err
 			}
 
-			session.UpdateLastQuery(time.Now().UnixNano() / 1000000)
+			if err := session.UpdateLastQuery(time.Now().UnixNano() / 1000000, mapping.Uuid); err != nil {
+				return nil, err
+			}
 
 			// Name has changed write changes to database
 			if mapping.Name != entry.Mapping.Name {
-				session.UpdateName(mapping.Name)
+				if err := session.UpdateName(mapping.Name, mapping.Uuid); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -159,16 +166,8 @@ func tryNameRemapping(uuid string) (mapping *mojang.PlayerNameMapping, err error
 	return entry.Mapping, nil
 }
 
-func millisToTime(millis int64) {
-	i, err := strconv.ParseInt("1405544146", 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	tm := time.Unix(i, 0)
-	fmt.Println(tm)
-}
-
-func handleError(ctx *fasthttp.RequestCtx, code int, body string) {
+func handleError(err error, ctx *fasthttp.RequestCtx, code int, body string) {
+	log.Print(err)
 	ctx.SetStatusCode(code)
 	ctx.SetBodyString(body)
 }
