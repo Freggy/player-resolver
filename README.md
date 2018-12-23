@@ -22,7 +22,7 @@ When performing a GET request with the given valid name, you will then receive t
 
 If the name is not valid an error response is sent back.
 ```JSON
-{"code": 400, "message": "Provided name is not valid", "type": "InvalidNameException"}
+{"status": 400, "message": "Provided name is not valid", "type": "InvalidNameException"}
 ```
 
 ### GET `/name/:uuid`
@@ -36,5 +36,5 @@ When performing a GET request with the given `UUID`, you will then receive the p
 If the provided `UUID` is not valid an error response is sent back.
 
 ```JSON
-{"code": 400, "message": "Provided UUID is not vaild", "type": "InvalidUuidException"}
+{"status": 400, "message": "Provided UUID is not vaild", "type": "InvalidUUIDException"}
 ```
