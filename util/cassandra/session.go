@@ -5,6 +5,7 @@ import (
 	"github.com/luxordynamics/player-resolver/util/mojang"
 )
 
+
 type Session struct {
 	session     *gocql.Session
 	clusterConf *gocql.ClusterConfig
