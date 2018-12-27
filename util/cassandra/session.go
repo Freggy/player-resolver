@@ -30,8 +30,8 @@ var (
 )
 
 // New creates a new instance of Session and directly connects to the cluster.
-func New() (*Session, error) {
-	cluster := gocql.NewCluster("0.0.0.0")
+func New(host string) (*Session, error) {
+	cluster := gocql.NewCluster(host)
 	cluster.Keyspace = "luxor"
 	cluster.Consistency = gocql.Quorum
 

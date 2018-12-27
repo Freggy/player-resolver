@@ -12,7 +12,7 @@ func ResolveNameToUuid(
 	name string,
 	session *cassandra.Session,
 	api *mojang.Api,
-	queryInterval time.Duration) (*mojang.PlayerNameMapping, error) {
+	queryInterval Duration) (*mojang.PlayerNameMapping, error) {
 
 	if !mojang.ValidUserNameRegex.MatchString(name) {
 		log.Println("Given name is not valid. (" + name + ")")
@@ -43,7 +43,7 @@ func ResolveUuidToName(
 	uuid string,
 	session *cassandra.Session,
 	api *mojang.Api,
-	queryInterval time.Duration) (*mojang.PlayerNameMapping, error) {
+	queryInterval Duration) (*mojang.PlayerNameMapping, error) {
 
 	if mojang.ValidLongRegex.MatchString(uuid) {
 		uuid = strings.Replace(uuid, "-", "", -1)
@@ -72,7 +72,7 @@ func ResolveUuidToName(
 func tryNameRemapping(uuid string,
 	session *cassandra.Session,
 	api *mojang.Api,
-	queryInterval time.Duration) (mapping *mojang.PlayerNameMapping, err error) {
+	queryInterval Duration) (mapping *mojang.PlayerNameMapping, err error) {
 
 	entry, err := session.EntryByUuid(uuid)
 
@@ -89,7 +89,7 @@ func tryNameRemapping(uuid string,
 
 		// If the last time we queried the Mojang api exceeds the specified interval,
 		// we retrieve the newest name in order to have the most up to date values
-		if time.Unix(entry.LastQuery/1000, 0).After(time.Now().Add(queryInterval)) {
+		if time.Unix(entry.LastQuery/1000, 0).After(time.Now().Add(queryInterval.Duration)) {
 			mapping, err := api.NameFromUuid(entry.Mapping.Uuid)
 
 			if err != nil {

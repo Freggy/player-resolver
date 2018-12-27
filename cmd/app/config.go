@@ -12,10 +12,15 @@ type Config struct {
 	MojangAPIQueryInterval Duration `json:"mojangApiQueryInterval"`
 	Host                   string   `json:"host"`
 	Port                   int      `json:"port"`
+	CassandraHost          string   `json:"cassandraHost"`
 }
 
 type Duration struct {
 	time.Duration
+}
+
+func NewDefaultConfig() *Config {
+	return nil
 }
 
 func (d Duration) MarshalJSON() ([]byte, error) {

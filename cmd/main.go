@@ -7,19 +7,43 @@ import (
 	"github.com/luxordynamics/player-resolver/util/cassandra"
 	"github.com/luxordynamics/player-resolver/util/mojang"
 	"github.com/valyala/fasthttp"
+	"io/ioutil"
 	"log"
-	"time"
+	"os"
 )
 
 // TODO: make testable
 
 var api = mojang.NewApi()
-var config app.Config
+var config *app.Config
 var dbSession *cassandra.Session
 
 func main() {
+	if _, err := os.Stat(app.ConfigLocation); os.IsNotExist(err) {
+		config = app.NewDefaultConfig()
 
-	session, err := cassandra.New()
+		data, err := json.Marshal(config)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := ioutil.WriteFile(app.ConfigLocation, data, 777); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		data, err := ioutil.ReadFile(app.ConfigLocation)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := json.Unmarshal(data, config); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	session, err := cassandra.New(config.CassandraHost)
 	defer session.Close()
 
 	if err != nil {
@@ -30,12 +54,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// TODO: load config
-
 	router := fasthttprouter.New()
 	router.GET("/uuid/:name", HandleUuidRequest)
 	router.GET("/name/:uuid", HandleNameRequest)
-	fasthttp.ListenAndServe(":8080", router.Handler)
+
+	log.Fatal(fasthttp.ListenAndServe(":8080", router.Handler))
 }
 
 // HandleUuidRequest handles requests for resolving names to UUIDs
@@ -55,11 +78,11 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 }
 
 func sendData(
-	f func(string, *cassandra.Session, *mojang.Api, time.Duration) (*mojang.PlayerNameMapping, error),
+	f func(string, *cassandra.Session, *mojang.Api, app.Duration) (*mojang.PlayerNameMapping, error),
 	identifier string,
 	session *cassandra.Session,
 	api *mojang.Api,
-	queryInterval time.Duration,
+	queryInterval app.Duration,
 	ctx *fasthttp.RequestCtx) {
 
 	data, err := f(identifier, session, api, queryInterval)
