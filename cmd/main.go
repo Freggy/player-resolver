@@ -78,7 +78,7 @@ func HandleNameRequest(ctx *fasthttp.RequestCtx) {
 }
 
 func sendData(
-	f func(string, *cassandra.Session, *mojang.Api, app.Duration) (*mojang.PlayerNameMapping, error),
+	f app.Resolver,
 	identifier string,
 	session *cassandra.Session,
 	api *mojang.Api,

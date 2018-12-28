@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+type Resolver func(string, *cassandra.Session, *mojang.Api, Duration) (*mojang.PlayerNameMapping, error)
+
 func ResolveNameToUuid(
 	name string,
 	session *cassandra.Session,
